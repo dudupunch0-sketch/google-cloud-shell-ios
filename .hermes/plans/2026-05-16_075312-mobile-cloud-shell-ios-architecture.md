@@ -12,16 +12,19 @@
 
 ## 1. 읽은 최신 자료
 
-최신화 후 확인한 커밋:
+최신화 후 확인한 기준:
 
-- `8fac0c1 Mobile Cloud Shell Terminal PRD v0.2.html 만들기`
-- `7696854 Mobile Cloud Shell Terminal PRD.md 만들기`
+- `main`: `2339237 Merge pull request #3 from dudupunch0-sketch/feat/cloud-shell-api-client`
+- 현재 작업 브랜치: `feat/ssh-key-management-core`
+- SSH/key-management 구현 기준 커밋: `c3844b3 fix: resolve SSH core CI compile errors`
+- 핸드오프 문서: `docs/PROJECT_STATUS.md`
 
 설계 기준 문서:
 
 - `Mobile Cloud Shell Terminal PRD.md`
 - `Mobile Cloud Shell Terminal PRD v0.2.html`
-- `README.md`는 현재 제목만 있는 빈 repo 수준 문서
+- `README.md`
+- `docs/PROJECT_STATUS.md`
 
 핵심 요구 요약:
 
@@ -39,7 +42,18 @@
 
 ## 2. 현재 repo 상태와 설계 전제
 
-현재 repo에는 아직 Xcode project/app source가 없다. 따라서 이 문서는 greenfield iOS app 생성부터 시작하는 설계다.
+현재 repo는 Swift Package 기반의 `MobileCloudShellCore` 라이브러리와 XCTest target을 갖고 있다. 아직 완성된 iOS 앱 UI/Xcode app target은 없지만, Auth, Cloud Shell API, Workspace/tmux, Terminal keyboard helper, SSH/key-management core slice가 pure Swift core로 구현되어 있다.
+
+현재 구현된 주요 source 영역:
+
+- `Sources/MobileCloudShellCore/Auth/`
+- `Sources/MobileCloudShellCore/CloudShell/`
+- `Sources/MobileCloudShellCore/Workspace/`
+- `Sources/MobileCloudShellCore/Terminal/`
+- `Sources/MobileCloudShellCore/SSH/`
+- `Sources/MobileCloudShellCore/Support/`
+
+현재 브랜치 `feat/ssh-key-management-core`의 SSH/key-management slice는 최종 정적 re-review에서 승인되었고, macOS/Swift 가능 환경에서 `swift test` 검증을 기다리는 상태다.
 
 전제:
 
@@ -47,7 +61,7 @@
 - iPhone portrait를 우선한다. iPad/split view는 MVP 제외.
 - Codex/Hermes 자동 실행은 하지 않는다. 사용자가 terminal 안에서 직접 실행한다.
 - Push 알림, session output snapshot, 기존 non-app tmux session import는 MVP 이후.
-- 현재 작업 환경은 Linux라 Xcode/iOS Simulator 검증은 불가하다. 실제 빌드/테스트는 macOS + Xcode 환경에서 수행해야 한다.
+- 현재 작업 환경은 Linux이고 `swift`/`xcodebuild`가 없어 Xcode/iOS Simulator 검증은 불가했다. 실제 빌드/테스트는 macOS + Xcode 또는 Swift toolchain이 있는 환경에서 수행해야 한다.
 
 ---
 
@@ -484,6 +498,17 @@ Paste 정책:
 
 ## 8. 구현 단계 계획
 
+현재 구현 진행 요약:
+
+- Swift Package 기반 core/test target bootstrap은 완료되어 있다.
+- Phase 2 pure domain 중 Workspace, tmux parser, metadata store, keyboard helper는 구현되어 있다.
+- Phase 3 Cloud Shell API core는 구현되어 있다.
+- Phase 4 중 SSH/key-management의 domain/protocol/orchestration core는 `feat/ssh-key-management-core`에서 구현되어 있고, Swift 가능 환경의 `swift test` 검증 대기 중이다.
+- Phase 4의 실제 Keychain store, 실제 key generation/export, concrete SSH library adapter는 아직 남아 있다.
+- UI app skeleton, terminal renderer, reconnect coordinator는 아직 남아 있다.
+
+아래 단계 계획은 최초 설계 기준을 보존하되, 이미 끝난 pure core 항목은 다음 PR들에서 반복 구현하지 말고 현재 source를 확장한다.
+
 ### Phase 0: Repo bootstrap
 
 **Objective:** iOS app skeleton과 테스트 target을 만든다.
@@ -796,14 +821,27 @@ PRD T-01~T-15를 다음 테스트로 매핑한다.
 
 ## 12. 다음 행동 제안
 
-1. 먼저 Phase 1 spike를 진행한다. SSH/terminal/key 조합이 확정되지 않으면 이후 UI 구현이 되돌아갈 수 있다.
-2. spike 성공 기준을 만족하면 Xcode project skeleton과 pure domain tests를 만든다.
-3. 구현은 작은 PR 단위로 나눈다.
-   - PR 1: Xcode project + domain tests.
-   - PR 2: Auth + Cloud Shell API fake tests.
-   - PR 3: SSH/key/management channel.
-   - PR 4: Workspace picker/session management.
-   - PR 5: Terminal UI/keyboard.
-   - PR 6: reconnect/lifecycle/security polish.
+현재 즉시 할 일:
 
-이 문서는 설계/계획만 포함한다. 앱 코드 구현은 사용자 승인 후 별도 작업으로 진행한다.
+1. `feat/ssh-key-management-core` PR에서 macOS/Swift 가능 환경으로 `swift test`를 실행한다.
+2. CI가 통과하면 SSH/key-management core slice를 `main`에 merge한다.
+3. 실패하면 같은 브랜치에서 compile/test fix 후 다시 push한다.
+
+merge 이후 권장 순서:
+
+1. SSH/terminal/key compatibility spike를 진행한다. SSH library, terminal renderer, key export/auth 조합이 확정되지 않으면 이후 UI 구현이 되돌아갈 수 있다.
+2. Keychain-backed `SSHKeyPairStore`와 실제 `SSHKeyGenerating` 구현을 추가한다.
+3. Management exec channel 기반 `WorkspaceRepository`를 구현한다. 모든 shell argument는 `SSHCommandQuoter`로 quote하고 interactive PTY에는 관리 명령을 주입하지 않는다.
+4. SwiftUI app skeleton, session picker, terminal view, top-down sessions drawer, keyboard accessory bar를 구현한다.
+5. reconnect/lifecycle/security polish를 마지막 MVP gate로 진행한다.
+
+다음 PR 분할 추천:
+
+- PR A: SSH/key-management core 문서/테스트 검증 및 merge. 현재 브랜치.
+- PR B: SSH library + terminal renderer + key-format spike 결과 문서와 최소 adapter proof-of-concept.
+- PR C: Keychain store + real key generation/export.
+- PR D: Workspace repository over management exec channel.
+- PR E: UI skeleton/session picker/terminal screen.
+- PR F: reconnect/lifecycle/security polish.
+
+이 문서는 현재 구현 상태를 반영한 설계/계획 문서다. 다음 서버에서는 `docs/PROJECT_STATUS.md`를 먼저 읽고 이어서 작업한다.
