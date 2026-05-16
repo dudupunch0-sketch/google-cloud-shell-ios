@@ -11,10 +11,6 @@ public struct RedactedLogger {
         self.sink = sink
     }
 
-    public init(_ sink: @escaping Sink) {
-        self.sink = sink
-    }
-
     public func log(_ message: String) {
         sink(Self.redact(message))
     }

@@ -122,7 +122,7 @@ final class CloudShellAPIClientTests: XCTestCase {
 
         let request = try XCTUnwrap(httpClient.requests.first)
         XCTAssertEqual(request.httpMethod, "GET")
-        XCTAssertEqual(request.url?.percentEncodedPath, "/operations/cloud%20shell/op%3Fwith%23fragment")
+        XCTAssertEqual(request.url?.absoluteString, "https://cloudshell.example/operations/cloud%20shell/op%3Fwith%23fragment")
         XCTAssertNil(request.url?.query)
     }
 

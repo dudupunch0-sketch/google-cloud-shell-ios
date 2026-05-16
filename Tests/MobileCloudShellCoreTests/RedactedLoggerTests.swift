@@ -57,7 +57,7 @@ final class RedactedLoggerTests: XCTestCase {
     func testLoggerSinkReceivesRedactedMessageOnly() {
         let rawToken = "raw-access-token"
         var messages: [String] = []
-        let logger = RedactedLogger { messages.append($0) }
+        let logger = RedactedLogger(sink: { messages.append($0) })
 
         logger.log("Bearer \(rawToken)")
 
