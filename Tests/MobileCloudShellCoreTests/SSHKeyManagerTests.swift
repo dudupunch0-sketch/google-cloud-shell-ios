@@ -64,7 +64,8 @@ final class SSHKeyManagerTests: XCTestCase {
         try await manager.deleteKeyPair()
 
         XCTAssertEqual(store.deleteCount, 1)
-        XCTAssertNil(try await store.loadKeyPair())
+        let reloadedKeyPair = try await store.loadKeyPair()
+        XCTAssertNil(reloadedKeyPair)
     }
 }
 

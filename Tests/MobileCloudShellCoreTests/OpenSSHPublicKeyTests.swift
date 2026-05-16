@@ -6,7 +6,7 @@ final class OpenSSHPublicKeyTests: XCTestCase {
 
     func testAcceptsAndNormalizesECDSAKey() throws {
         let key = try OpenSSHPublicKey(
-            rawValue: "  ecdsa-sha2-nistp256   \(publicKeyBlob)	cloud-shell-ios  "
+            rawValue: "  ecdsa-sha2-nistp256   \(publicKeyBlob)\tcloud-shell-ios  "
         )
 
         XCTAssertEqual(key.algorithm, .ecdsaP256)

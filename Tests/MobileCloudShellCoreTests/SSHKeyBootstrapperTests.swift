@@ -103,7 +103,8 @@ final class SSHKeyBootstrapperTests: XCTestCase {
         } catch {
             XCTFail("Expected BootstrapFailure, got \(error)")
         }
-        XCTAssertNil(try await store.loadKeyPair())
+        let reloadedKeyPair = try await store.loadKeyPair()
+        XCTAssertNil(reloadedKeyPair)
         XCTAssertEqual(store.deleteCount, 1)
     }
 
@@ -132,7 +133,8 @@ final class SSHKeyBootstrapperTests: XCTestCase {
         } catch {
             XCTFail("Expected BootstrapFailure, got \(error)")
         }
-        XCTAssertNil(try await store.loadKeyPair())
+        let reloadedKeyPair = try await store.loadKeyPair()
+        XCTAssertNil(reloadedKeyPair)
         XCTAssertEqual(store.deleteCount, 1)
     }
 
@@ -167,7 +169,8 @@ final class SSHKeyBootstrapperTests: XCTestCase {
             XCTFail("Expected SSHKeyBootstrapError, got \(error)")
         }
         XCTAssertEqual(store.deleteCount, 1)
-        XCTAssertEqual(try await store.loadKeyPair(), keyPair)
+        let reloadedKeyPair = try await store.loadKeyPair()
+        XCTAssertEqual(reloadedKeyPair, keyPair)
     }
 }
 
