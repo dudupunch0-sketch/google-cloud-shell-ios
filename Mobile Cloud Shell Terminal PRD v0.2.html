@@ -1,0 +1,170 @@
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mobile Cloud Shell Terminal PRD v0.2</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#142033; --muted:#657083; --line:#d9e1ec;
+    --accent:#2563eb; --accent2:#10b981; --warn:#f59e0b; --danger:#ef4444; --code:#0f172a;
+  }
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif;line-height:1.55;}
+  .page{max-width:1080px;margin:0 auto;padding:28px 18px 80px;}
+  .hero{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:white;border-radius:24px;padding:34px;box-shadow:0 16px 38px rgba(15,23,42,.18);}
+  .hero h1{margin:0 0 8px;font-size:34px;line-height:1.2;}
+  .hero p{margin:8px 0 0;color:#dbeafe;font-size:17px;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:white;border-radius:999px;padding:6px 10px;font-size:13px;}
+  section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;margin-top:18px;box-shadow:0 8px 22px rgba(15,23,42,.05);}
+  h2{margin:0 0 14px;font-size:24px;} h3{margin:22px 0 10px;font-size:18px;} h4{margin:16px 0 8px;}
+  .lead{font-size:17px;color:#334155;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+  .card{border:1px solid var(--line);border-radius:16px;padding:14px;background:#fbfdff;}
+  .card b{display:block;margin-bottom:6px;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;} th,td{border:1px solid var(--line);padding:9px 10px;vertical-align:top;} th{background:#f1f5f9;text-align:left;}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;} code{background:#eef2ff;color:#1e3a8a;padding:2px 5px;border-radius:6px;} pre{background:var(--code);color:#e2e8f0;border-radius:14px;padding:14px;overflow:auto;font-size:13px;}
+  .diagram{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin:18px 0;}
+  .node{background:#fff;border:2px solid #cbd5e1;border-radius:14px;padding:12px 14px;min-width:132px;text-align:center;font-weight:650;}
+  .node.accent{border-color:var(--accent);background:#eff6ff}.node.green{border-color:var(--accent2);background:#ecfdf5}.node.warn{border-color:var(--warn);background:#fffbeb}.node.danger{border-color:var(--danger);background:#fef2f2}
+  .arrow{font-size:24px;color:#64748b;font-weight:700;}
+  .phone{width:340px;max-width:100%;border:10px solid #111827;border-radius:36px;background:#111827;padding:10px;box-shadow:0 16px 42px rgba(15,23,42,.22);margin:12px auto;}
+  .screen{background:#f8fafc;border-radius:26px;overflow:hidden;border:1px solid #334155;}
+  .topbar{background:#e2e8f0;color:#0f172a;padding:9px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;font-weight:650;}
+  .terminal{background:#111827;color:#d1d5db;min-height:250px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;white-space:pre-wrap;}
+  .keys{background:#020617;padding:10px;display:flex;flex-wrap:wrap;gap:6px;}
+  .key{background:#334155;color:white;border-radius:10px;padding:7px 9px;font-size:12px;min-width:30px;text-align:center;}
+  .drawer{background:#ffffff;border-bottom:2px solid #cbd5e1;padding:12px;font-size:13px;box-shadow:0 8px 20px rgba(15,23,42,.15);}
+  .row{border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin:8px 0;background:#f8fafc;}
+  .btn{display:inline-block;background:#2563eb;color:white;border-radius:9px;padding:5px 9px;margin:4px 3px;font-size:12px}.btn.danger{background:#ef4444}.btn.muted{background:#64748b}.btn.green{background:#10b981}
+  .modal{border:2px solid #ef4444;border-radius:16px;background:#fff;padding:14px;box-shadow:0 14px 30px rgba(239,68,68,.18);}
+  .small{font-size:13px;color:var(--muted);} .warntext{color:#b45309}.dangertext{color:#dc2626}.ok{color:#059669}
+  .toc a{display:inline-block;margin:3px 8px 3px 0;color:#2563eb;text-decoration:none;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <h1>Mobile Cloud Shell Terminal PRD v0.2</h1>
+    <p>iPhone 세로모드에서 Google Cloud Shell에 SSH로 직접 접속하고, Codex/Hermes agent 작업을 tmux Workspace 단위로 안정적으로 이어가는 전용 터미널 앱.</p>
+    <div class="meta">
+      <span class="pill">Native SSH</span><span class="pill">Cloud Shell API</span><span class="pill">tmux Workspace</span><span class="pill">iPhone Portrait</span><span class="pill">LLM-readable</span>
+    </div>
+  </div>
+
+  <section class="toc">
+    <h2>0. 핵심 요약</h2>
+    <p class="lead">이 앱은 Cloud Shell Editor나 WebView 앱이 아니다. Google Cloud Shell API로 environment를 시작하고 SSH로 직접 접속하는 네이티브 터미널이다. 앱 시작 시 살아있는 <code>mobile-agent_*</code> tmux 세션을 보여주고 사용자가 선택한다. 없으면 “새로 열기”를 보여준다.</p>
+    <a href="#architecture">아키텍처</a><a href="#workspace">Workspace</a><a href="#startup">시작 화면</a><a href="#terminal">터미널 UI</a><a href="#keyboard">키보드</a><a href="#reconnect">재접속</a><a href="#requirements">요구사항</a>
+  </section>
+
+  <section>
+    <h2>1. 제품 정의</h2>
+    <div class="grid">
+      <div class="card"><b>제품명</b>Mobile Cloud Shell Terminal</div>
+      <div class="card"><b>대상</b>개인 Google 계정 1개, iPhone 세로모드</div>
+      <div class="card"><b>핵심 사용</b>Codex CLI, Hermes, shell 작업</div>
+      <div class="card"><b>비목표</b>Cloud Shell Editor, WebView, 다중 계정, iPad 최적화</div>
+    </div>
+    <h3>사용자 문제</h3>
+    <table><tbody><tr><th>현재 방식</th><th>문제</th><th>앱의 해결</th></tr><tr><td>Safari Cloud Shell</td><td>복귀 시 다시 연결 버튼, Ctrl/Tab/Paste 불편</td><td>자동 재접속 + 네이티브 입력</td></tr><tr><td>기존 앱</td><td>백그라운드 전환 후 세션 종료 경험</td><td>tmux Workspace에 작업 유지</td></tr></tbody></table>
+  </section>
+
+  <section id="architecture">
+    <h2>2. 전체 아키텍처</h2>
+    <div class="diagram">
+      <div class="node accent">iOS App</div><div class="arrow">→</div><div class="node">Google OAuth</div><div class="arrow">→</div><div class="node accent">Cloud Shell API</div><div class="arrow">→</div><div class="node green">Cloud Shell Env</div>
+    </div>
+    <div class="diagram">
+      <div class="node accent">SSH Client</div><div class="arrow">→</div><div class="node">PTY Channel</div><div class="arrow">→</div><div class="node green">tmux Workspace</div><div class="arrow">→</div><div class="node warn">Codex / Hermes</div>
+    </div>
+    <div class="diagram">
+      <div class="node accent">Session Manager</div><div class="arrow">→</div><div class="node">Management Exec Channel</div><div class="arrow">→</div><div class="node green">tmux list/new/kill</div><div class="arrow">→</div><div class="node">workspaces.json</div>
+    </div>
+    <p>터미널 PTY는 사용자 입력 전용이다. 세션 목록 조회, 세션 생성, kill, metadata 저장은 별도 management exec channel에서 수행한다. 이렇게 해야 Codex/Hermes TUI 입력창에 관리 명령이 섞이지 않는다.</p>
+  </section>
+
+  <section>
+    <h2>3. Cloud Shell 연동</h2>
+    <table><tbody><tr><th>API</th><th>목적</th></tr><tr><td><code>GetEnvironment</code></td><td><code>users/me/environments/default</code> 상태 및 SSH 정보 조회</td></tr><tr><td><code>StartEnvironment</code></td><td>Cloud Shell environment 시작</td></tr><tr><td><code>AddPublicKey</code></td><td>앱의 SSH public key 등록</td></tr><tr><td><code>AuthorizeEnvironment</code></td><td>Cloud Shell 안에서 gcloud 수동 로그인 최소화</td></tr></tbody></table>
+    <pre>앱 실행 → OAuth 확인 → GetEnvironment → 필요 시 StartEnvironment
+→ AddPublicKey → AuthorizeEnvironment → ssh_username/host/port 수신
+→ SSH 접속 → live mobile sessions 조회</pre>
+  </section>
+
+  <section id="workspace">
+    <h2>4. Workspace / tmux 세션</h2>
+    <h3>세션 이름 규칙</h3>
+    <pre>mobile-agent_YYYYMMDD-HHmm_{letter}
+예: mobile-agent_20260516-1530_a
+예: mobile-agent_20260516-1530_b</pre>
+    <table><tbody><tr><th>항목</th><th>정책</th></tr><tr><td>letter</td><td>한 글자. <code>a-z</code> 후 필요 시 <code>A-Z</code></td></tr><tr><td>충돌</td><td>같은 분에 이미 존재하는 letter는 건너뜀</td></tr><tr><td>display name</td><td>사용자가 자유롭게 변경. tmux session name은 바꾸지 않음</td></tr><tr><td>metadata</td><td><code>~/.mobile-cloud-shell/workspaces.json</code></td></tr></tbody></table>
+    <h3>metadata 예시</h3>
+    <pre>{
+  "schemaVersion": 1,
+  "workspaces": {
+    "mobile-agent_20260516-1530_a": {
+      "displayName": "Codex: iOS PRD 정리",
+      "createdAt": "2026-05-16T06:30:00Z",
+      "lastOpenedAt": "2026-05-16T07:01:03Z"
+    }
+  }
+}</pre>
+  </section>
+
+  <section id="startup">
+    <h2>5. 앱 시작 화면</h2>
+    <p>앱 시작 시 자동으로 마지막 세션에 붙지 않는다. 살아있는 모바일 세션을 보여주고 사용자가 선택한다.</p>
+    <div class="phone"><div class="screen"><div class="topbar">Mobile Cloud Shell <span>Connected</span></div><div class="drawer">
+      <b>살아있는 Workspace</b>
+      <div class="row"><b>Codex: iOS PRD 정리 ✎</b><br><span class="small">mobile-agent_20260516-1530_a<br>activity: 2m ago · windows: 1</span><br><span class="btn green">열기</span></div>
+      <div class="row"><b>Hermes 실험 ✎</b><br><span class="small">mobile-agent_20260516-1530_b<br>activity: 12m ago · windows: 1</span><br><span class="btn green">열기</span></div>
+      <span class="btn">+ 새로 열기</span>
+    </div></div></div>
+    <div class="phone"><div class="screen"><div class="topbar">Mobile Cloud Shell <span>Connected</span></div><div class="drawer" style="min-height:220px;text-align:center;padding-top:60px;">
+      <b>살아있는 모바일 Workspace가 없습니다</b><br><br><span class="small">Cloud Shell VM이 새로 시작되었거나 이전 tmux 세션이 종료되었을 수 있음</span><br><br><span class="btn">+ 새로 열기</span>
+    </div></div></div>
+  </section>
+
+  <section id="terminal">
+    <h2>6. 터미널 화면과 Sessions drawer</h2>
+    <div class="phone"><div class="screen"><div class="topbar">● Connected · Codex: iOS PRD <span class="btn muted">Sessions</span></div><div class="terminal">$ codex
+Codex TUI running...
+
+&gt; _</div><div class="keys"><span class="key">Ctrl</span><span class="key">Shift</span><span class="key">Tab</span><span class="key">Esc</span><span class="key">←</span><span class="key">↑</span><span class="key">↓</span><span class="key">→</span><span class="key">Home</span><span class="key">End</span><span class="key">Paste</span></div></div></div>
+    <h3>Top-down Sessions drawer</h3>
+    <div class="phone"><div class="screen"><div class="drawer"><b>Sessions</b><span style="float:right">닫기</span><div class="row"><b>현재: Codex: iOS PRD 정리</b><br><span class="small">mobile-agent_20260516-1530_a</span><br><span class="btn muted">이름 변경</span><span class="btn danger">현재 세션 종료</span></div><div class="row"><b>Hermes 실험 ✎</b><br><span class="small">mobile-agent_20260516-1530_b</span><br><span class="btn green">전환</span><span class="btn danger">종료</span></div><span class="btn">+ 새로 열기</span></div><div class="terminal">terminal content behind drawer...</div></div></div>
+    <h3>Kill confirmation</h3>
+    <div class="modal"><b>Workspace를 종료할까요?</b><p>이 작업은 tmux session을 kill하며, 실행 중인 Codex/Hermes 작업도 종료될 수 있습니다.</p><p><code>mobile-agent_20260516-1530_a</code></p><span class="btn muted">N: 취소</span><span class="btn danger">Y: 종료</span></div>
+  </section>
+
+  <section id="keyboard">
+    <h2>7. 키보드 스펙</h2>
+    <table><tbody><tr><th>키</th><th>동작</th></tr><tr><td>Ctrl 짧게 탭</td><td>다음 입력 1회에만 Ctrl 적용</td></tr><tr><td>Ctrl 길게 누름</td><td>Ctrl lock ON/OFF</td></tr><tr><td>Shift 짧게 탭</td><td>다음 입력 1회에만 Shift 적용</td></tr><tr><td>Shift 길게 누름</td><td>Shift lock ON/OFF</td></tr><tr><td>Tab / Esc / 방향키 / Home / End</td><td>터미널 제어 sequence 전송</td></tr><tr><td>Paste</td><td>클립보드 전송, bracketed paste 권장</td></tr></tbody></table>
+  </section>
+
+  <section id="reconnect">
+    <h2>8. 백그라운드 / 재접속</h2>
+    <p class="lead">성공 기준은 “iOS 백그라운드에서 SSH 소켓이 항상 살아있다”가 아니다. 성공 기준은 “Cloud Shell 안의 tmux Workspace가 살아있으면 앱 복귀 시 같은 Workspace에 자동 attach한다”이다.</p>
+    <div class="diagram"><div class="node accent">Background</div><div class="arrow">→</div><div class="node warn">Socket may die</div><div class="arrow">→</div><div class="node accent">Foreground</div><div class="arrow">→</div><div class="node green">Reconnect SSH</div><div class="arrow">→</div><div class="node green">Attach tmux</div></div>
+  </section>
+
+  <section id="requirements">
+    <h2>9. MVP 요구사항 요약</h2>
+    <table><tbody><tr><th>영역</th><th>P0 요구사항</th></tr><tr><td>Auth</td><td>Google 로그인, token 갱신, token 로그 금지</td></tr><tr><td>Cloud Shell</td><td>Get/Start Environment, AddPublicKey, AuthorizeEnvironment</td></tr><tr><td>SSH</td><td>Keychain private key, PTY channel, management exec channel</td></tr><tr><td>Workspace</td><td>목록, 선택, 생성, display name 변경, 전환, y/n kill</td></tr><tr><td>Terminal</td><td>ANSI/TUI 렌더링, 상태바, Sessions 버튼</td></tr><tr><td>Keyboard</td><td>Ctrl/Shift toggle, Tab, Esc, 방향키, Home, End, Paste</td></tr><tr><td>Reconnect</td><td>foreground 복귀 시 자동 상태 확인, SSH 재접속, tmux attach</td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>10. References</h2>
+    <ul>
+      <li>Google Cloud Shell API reference: https://docs.cloud.google.com/shell/docs/reference/rpc/google.cloud.shell.v1</li>
+      <li>Google Cloud Shell REST users.environments: https://docs.cloud.google.com/shell/docs/reference/rest/v1/users.environments</li>
+      <li>Google Cloud Shell AddPublicKey: https://docs.cloud.google.com/shell/docs/reference/rest/v1/users.environments/addPublicKey</li>
+      <li>Google Cloud Shell quotas and limits: https://docs.cloud.google.com/shell/docs/quotas-limits</li>
+      <li>Apple Energy Efficiency Guide for iOS Apps — Work Less in the Background: https://developer.apple.com/library/archive/documentation/Performance/Conceptual/EnergyGuide-iOS/WorkLessInTheBackground.html</li>
+      <li>OpenAI Codex CLI: https://developers.openai.com/codex/cli</li>
+      <li>OpenAI Codex CLI features: https://developers.openai.com/codex/cli/features</li>
+    </ul>
+  </section>
+</div>
+
+
+</body></html>
