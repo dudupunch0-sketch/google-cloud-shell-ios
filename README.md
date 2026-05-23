@@ -36,16 +36,13 @@ Tests/MobileCloudShellCoreTests/
 
 ## Implemented core slices
 
-Already present on `main` before the SSH/key-management branch:
+Current core library coverage:
 
 - Auth session domain and storage contracts.
 - Cloud Shell API client with `GetEnvironment`, `StartEnvironment`, `AddPublicKey`, `AuthorizeEnvironment`, operation polling, and redacted API error mapping.
 - Workspace/tmux pure logic: workspace model, name generator, tmux session parser, metadata store.
 - Terminal keyboard/control-sequence helpers.
 - Redacted logging for OAuth/private-key-like material.
-
-Current branch `feat/ssh-key-management-core` adds:
-
 - `SSHClientProtocol`, `SSHConnectionProtocol`, `SSHPTYChannelProtocol` adapter protocols.
 - `SSHExecResult` and `SSHPTYRequest` value types.
 - `SSHEndpoint`, `SSHConnectionCredential`, `SSHConnectionConfiguration`.
@@ -54,7 +51,8 @@ Current branch `feat/ssh-key-management-core` adds:
 - `SSHKeyAlgorithm`, `OpenSSHPublicKey`, `SSHPrivateKeyMaterial`, and `SSHKeyPair` domain types.
 - `SSHKeyManager` for load-or-create/delete orchestration.
 - `SSHKeyBootstrapper` for key creation + Cloud Shell public-key registration + rollback on registration/polling failure.
-- XCTest coverage for public key parsing, private key redaction/validation, command quoting, connection manager behavior, key manager behavior, and bootstrap rollback paths.
+- `WorkspaceRepository` management-channel orchestration for listing, creating, renaming, and killing app-managed tmux workspaces through an injected exec adapter.
+- XCTest coverage for public key parsing, private key redaction/validation, command quoting, connection manager behavior, key manager behavior, bootstrap rollback paths, and workspace repository command orchestration.
 
 Not implemented yet:
 
@@ -62,6 +60,7 @@ Not implemented yet:
 - Real SSH key generation/export adapter.
 - Concrete SSH library adapter.
 - Terminal renderer/UI.
+- iOS app project/screen skeleton.
 - Real Cloud Shell smoke tests.
 
 ## Development and test commands
@@ -111,10 +110,10 @@ Recommended gate before merge:
 
 ## Next implementation slice
 
-After `feat/ssh-key-management-core` is merged, the next high-value slice is one of:
+After the workspace repository core is validated in a Swift-capable environment, the next high-value slice is one of:
 
-1. Keychain-backed SSH key storage + real key generation/export spike.
-2. Concrete SSH library adapter spike for private-key auth, exec, PTY, and window resize.
-3. Workspace repository over the management exec channel using `SSHCommandQuoter`.
+1. SSH/key/terminal compatibility spike for private-key auth, exec, PTY, and window resize.
+2. Keychain-backed SSH key storage + real key generation/export.
+3. iOS app skeleton and minimal SwiftUI navigation once a macOS/Xcode environment is available.
 
 The practical recommendation is to do the SSH/key/terminal compatibility spike before building UI, because SSH library and key-format constraints can affect multiple layers.
