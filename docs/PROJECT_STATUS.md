@@ -1,9 +1,9 @@
 # Project status and handoff
 
-Updated: 2026-05-23 05:00:22 UTC
-Branch: `hermes/hermes-1ae3a642`
+Updated: 2026-05-23 07:07:18 UTC
+Branch: `hermes/keychain-ssh-key-store`
 Base branch: `main`
-Latest reviewed commit before this update: `f49c76a`
+Latest reviewed commit before this update: `e64cab5`
 
 ## Why this document exists
 
@@ -22,19 +22,21 @@ Implemented core areas:
 - Terminal keyboard/control-sequence helpers.
 - SSH/key-management core domain and orchestration contracts.
 - Workspace repository core over an injected management exec adapter: live list, create, rename metadata, kill, malformed metadata backup.
+- SSH/key/terminal compatibility spike document.
+- Apple Keychain-backed SSH key pair store slice in this branch.
 
 The product target remains the PRD-defined iPhone portrait native SSH terminal for Google Cloud Shell, with long-running work preserved in Cloud Shell `tmux` workspaces.
 
 ## Current branch contents
 
-`main` already contains the SSH/key-management core merge. Current branch `hermes/hermes-1ae3a642` adds the next pure-core workspace repository slice:
+`main` already contains the SSH/key/terminal compatibility spike merge. Current branch `hermes/keychain-ssh-key-store` adds the Keychain-backed SSH key pair store slice:
 
 ```text
-Sources/MobileCloudShellCore/Workspace/WorkspaceRepository.swift
-Tests/MobileCloudShellCoreTests/WorkspaceRepositoryTests.swift
+Sources/MobileCloudShellCore/SSH/KeychainSSHKeyPairStore.swift
+Tests/MobileCloudShellCoreTests/KeychainSSHKeyPairStoreTests.swift
 ```
 
-This slice is intended to satisfy the first pure-core part of Phase 5 before real UI/Cloud Shell smoke testing is available.
+This slice keeps private key persistence behind the existing `SSHKeyPairStore` protocol before real key generation and NIOSSH adapters are added.
 
 ## What the SSH/key-management slice provides
 
@@ -71,6 +73,10 @@ Important validation fix already applied:
 
 - `SSHKeyManager` loads an existing key pair or generates/saves a new one.
 - Generated algorithm mismatches are rejected before saving.
+- `KeychainSSHKeyPairStore` persists `SSHKeyPair` JSON envelopes as a generic-password item in Apple Keychain.
+- Default Keychain accessibility is `whenUnlockedThisDeviceOnly`; `afterFirstUnlockThisDeviceOnly` is also exposed for future lifecycle testing.
+- Store configuration rejects empty service/account values; app integration should pass a stable per-Google-account identifier as the Keychain account.
+- Keychain OSStatus errors report fixed operation names and status codes, not key material or arbitrary command strings.
 - `SSHKeyBootstrapper` registers newly created keys through Cloud Shell `AddPublicKey` and waits for the returned operation.
 - Existing keys are not re-registered by default, but can be registered with `registerExistingKey: true`.
 
@@ -100,11 +106,12 @@ Use this for future management exec commands. Do not inject management commands 
 
 ## Review status
 
-Current workspace repository slice status:
+Current Keychain store slice status:
 
 - Implementation and XCTest coverage have been added.
+- Tests use an injected fake Keychain accessor; they do not touch the developer or CI login Keychain.
 - Local WSL environment still has no `swift` or `xcodebuild`, so compile/test validation must run on macOS, CI, or another Swift-capable host.
-- `swift test --filter WorkspaceRepositoryTests` was attempted locally and failed at tool discovery with `swift: command not found`.
+- `swift test --filter KeychainSSHKeyPairStoreTests` was attempted locally and failed at tool discovery with `swift: command not found`.
 - `git diff --check` passed locally.
 
 Checks not run here because tools were unavailable:
@@ -122,8 +129,8 @@ Use a macOS or Swift-capable environment.
 git clone https://github.com/dudupunch0-sketch/google-cloud-shell-ios.git
 cd google-cloud-shell-ios
 git fetch origin
-git checkout hermes/hermes-1ae3a642
-swift test --filter WorkspaceRepositoryTests
+git checkout hermes/keychain-ssh-key-store
+swift test --filter KeychainSSHKeyPairStoreTests
 swift test
 ```
 
@@ -136,27 +143,27 @@ gh pr view --json number,title,state,url,headRefName,baseRefName,statusCheckRoll
 If tests pass:
 
 1. Confirm CI is green on the PR.
-2. Merge `hermes/hermes-1ae3a642` into `main` using the repo's preferred merge strategy.
+2. Merge `hermes/keychain-ssh-key-store` into `main` using the repo's preferred merge strategy.
 3. Start the next slice from updated `main`.
 
 If tests fail:
 
-1. Fix compile/test errors on `hermes/hermes-1ae3a642`.
-2. Re-run `swift test --filter WorkspaceRepositoryTests` and `swift test`.
+1. Fix compile/test errors on `hermes/keychain-ssh-key-store`.
+2. Re-run `swift test --filter KeychainSSHKeyPairStoreTests` and `swift test`.
 3. Push the fix to the same branch so the PR updates.
 
 ## Recommended next slice after merge
 
 Recommended order:
 
-1. SSH/key/terminal compatibility spike.
-   - Pick candidate SSH library and terminal renderer.
-   - Verify iOS support for private-key auth, exec, PTY shell, and PTY resize.
-   - Verify generated key format compatibility with Cloud Shell `AddPublicKey` and the SSH library.
-2. Keychain-backed key store and real key generation/export.
-   - Implement `SSHKeyPairStore` using Keychain.
-   - Implement `SSHKeyGenerating` with the selected algorithm/library path.
-   - Keep private key material redacted in logs and errors.
+1. Real ECDSA P-256 key generation/export.
+   - Implement `SSHKeyGenerating` with CryptoKit P-256.
+   - Export the generated public key in OpenSSH `ecdsa-sha2-nistp256` format.
+   - Keep generated private key material out of logs and failure messages.
+2. Direct NIOSSH connection/PTY adapter skeleton.
+   - Pin an `apple/swift-nio-ssh` version compatible with the active Xcode/CI toolchain.
+   - Map `SSHClientProtocol`, `SSHConnectionProtocol`, and `SSHPTYChannelProtocol` to NIOSSH session channels.
+   - Keep management exec channels separate from interactive PTY channels.
 3. Terminal UI skeleton when a macOS/Xcode environment is available.
    - Session picker.
    - Terminal screen.
@@ -169,18 +176,19 @@ Recommended order:
 
 ## Known open decisions
 
-- Final concrete SSH library.
+- Final concrete SSH library version pin.
 - Final terminal renderer.
-- Real key algorithm if ECDSA P-256 export/auth compatibility is poor.
+- Whether Secure Enclave P-256 should replace Keychain-stored P-256 after device smoke testing.
 - Bundle identifier and Google OAuth client configuration.
-- Keychain accessibility policy; default candidate is a `ThisDeviceOnly` class.
+- Exact Google user subject/account identifier to use as the Keychain account.
+- Whether `whenUnlockedThisDeviceOnly` or `afterFirstUnlockThisDeviceOnly` is better after app lifecycle testing.
 - Whether to add `LocalizedError` to `SSHKeyBootstrapError` before user-facing UI consumes it.
 
 ## Merge readiness checklist
 
 - [ ] PR opened against `main`.
-- [ ] `swift test --filter WorkspaceRepositoryTests` passes on macOS, CI, or another Swift-capable host.
+- [ ] `swift test --filter KeychainSSHKeyPairStoreTests` passes on macOS, CI, or another Swift-capable host.
 - [ ] Full `swift test` passes on macOS, CI, or another Swift-capable host.
 - [ ] No private key/OAuth token material appears in logs or error descriptions.
-- [ ] Reviewer accepts management exec command construction and metadata backup behavior.
-- [ ] Reviewer accepts that this slice is repository/domain core only, not a real SSH library or UI implementation.
+- [ ] Reviewer accepts Keychain accessibility defaults and non-synchronizing device-only storage.
+- [ ] Reviewer accepts that this slice stores existing key material only; it does not generate keys or connect over SSH yet.
