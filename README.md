@@ -50,13 +50,13 @@ Current core library coverage:
 - `SSHCommandQuoter` for safe single-shell-argument quoting.
 - `SSHKeyAlgorithm`, `OpenSSHPublicKey`, `SSHPrivateKeyMaterial`, and `SSHKeyPair` domain types.
 - `SSHKeyManager` for load-or-create/delete orchestration.
+- `KeychainSSHKeyPairStore` for Apple Keychain-backed SSH key pair persistence using device-only accessibility and non-empty service/account validation.
 - `SSHKeyBootstrapper` for key creation + Cloud Shell public-key registration + rollback on registration/polling failure.
 - `WorkspaceRepository` management-channel orchestration for listing, creating, renaming, and killing app-managed tmux workspaces through an injected exec adapter.
-- XCTest coverage for public key parsing, private key redaction/validation, command quoting, connection manager behavior, key manager behavior, bootstrap rollback paths, and workspace repository command orchestration.
+- XCTest coverage for public key parsing, private key redaction/validation, command quoting, connection manager behavior, key manager behavior, Keychain store behavior, bootstrap rollback paths, and workspace repository command orchestration.
 
 Not implemented yet:
 
-- Real iOS Keychain-backed `SSHKeyPairStore`.
 - Real SSH key generation/export adapter.
 - Concrete SSH library adapter.
 - Terminal renderer/UI.
@@ -83,13 +83,14 @@ The current Linux handoff environment used for this documentation update did not
 
 ## Handoff to a test-capable server
 
-From a fresh environment:
+From a fresh environment for the current Keychain store branch:
 
 ```bash
 git clone https://github.com/dudupunch0-sketch/google-cloud-shell-ios.git
 cd google-cloud-shell-ios
 git fetch origin
-git checkout feat/ssh-key-management-core
+git checkout hermes/keychain-ssh-key-store
+swift test --filter KeychainSSHKeyPairStoreTests
 swift test
 ```
 
@@ -104,9 +105,9 @@ gh pr view --json number,title,state,url,headRefName,baseRefName,statusCheckRoll
 Recommended gate before merge:
 
 1. `swift test` passes on macOS or CI.
-2. Review confirms no sensitive material is logged by the new SSH/key code.
-3. Review confirms PTY lifecycle still closes the underlying SSH connection on open/close failures.
-4. Review confirms new-key rollback behavior is acceptable when public-key registration or operation polling fails.
+2. Review confirms no sensitive material is logged by the new Keychain code.
+3. Review confirms fake-Keychain unit tests do not touch the developer or CI login Keychain.
+4. Review confirms the default Keychain accessibility policy is acceptable for the first device smoke test.
 
 ## Next implementation slice
 
@@ -123,4 +124,4 @@ Current recommendation from that spike:
 3. Keep ECDSA P-256 as the first key algorithm and validate Keychain/Secure Enclave behavior on a real Apple device.
 4. Run the documented macOS/iOS Cloud Shell smoke test before building the full SwiftUI app shell.
 
-After the smoke test passes, the next high-value slice is Keychain-backed key storage plus the real NIOSSH connection/PTY adapter.
+After this Keychain store slice is validated, the next high-value slice is real ECDSA P-256 key generation/export plus a direct NIOSSH connection/PTY adapter skeleton.
