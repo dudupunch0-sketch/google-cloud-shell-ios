@@ -110,10 +110,17 @@ Recommended gate before merge:
 
 ## Next implementation slice
 
-After the workspace repository core is validated in a Swift-capable environment, the next high-value slice is one of:
+The SSH/key/terminal compatibility spike is captured in:
 
-1. SSH/key/terminal compatibility spike for private-key auth, exec, PTY, and window resize.
-2. Keychain-backed SSH key storage + real key generation/export.
-3. iOS app skeleton and minimal SwiftUI navigation once a macOS/Xcode environment is available.
+```text
+docs/spikes/ssh-terminal-key-evaluation.md
+```
 
-The practical recommendation is to do the SSH/key/terminal compatibility spike before building UI, because SSH library and key-format constraints can affect multiple layers.
+Current recommendation from that spike:
+
+1. Use SwiftTerm for the native terminal renderer.
+2. Prefer a direct `apple/swift-nio-ssh` adapter for SSH transport, with Citadel only as a fallback wrapper.
+3. Keep ECDSA P-256 as the first key algorithm and validate Keychain/Secure Enclave behavior on a real Apple device.
+4. Run the documented macOS/iOS Cloud Shell smoke test before building the full SwiftUI app shell.
+
+After the smoke test passes, the next high-value slice is Keychain-backed key storage plus the real NIOSSH connection/PTY adapter.
