@@ -1,9 +1,9 @@
 # Project status and handoff
 
-Updated: 2026-05-16 10:41:39 UTC
-Branch: `feat/ssh-key-management-core`
+Updated: 2026-05-23 05:00:22 UTC
+Branch: `hermes/hermes-1ae3a642`
 Base branch: `main`
-Latest reviewed commit before this documentation update: `c3844b3`
+Latest reviewed commit before this update: `f49c76a`
 
 ## Why this document exists
 
@@ -21,32 +21,20 @@ Implemented core areas:
 - Workspace/tmux pure domain logic.
 - Terminal keyboard/control-sequence helpers.
 - SSH/key-management core domain and orchestration contracts.
+- Workspace repository core over an injected management exec adapter: live list, create, rename metadata, kill, malformed metadata backup.
 
 The product target remains the PRD-defined iPhone portrait native SSH terminal for Google Cloud Shell, with long-running work preserved in Cloud Shell `tmux` workspaces.
 
 ## Current branch contents
 
-`feat/ssh-key-management-core` contains two implementation commits before this docs handoff:
-
-- `bc73452 feat: add SSH key management core`
-- `c3844b3 fix: resolve SSH core CI compile errors`
-
-Files added by the branch relative to `main`:
+`main` already contains the SSH/key-management core merge. Current branch `hermes/hermes-1ae3a642` adds the next pure-core workspace repository slice:
 
 ```text
-Sources/MobileCloudShellCore/SSH/SSHClientProtocol.swift
-Sources/MobileCloudShellCore/SSH/SSHCommandQuoter.swift
-Sources/MobileCloudShellCore/SSH/SSHConnectionManager.swift
-Sources/MobileCloudShellCore/SSH/SSHKeyBootstrapper.swift
-Sources/MobileCloudShellCore/SSH/SSHKeyManager.swift
-Sources/MobileCloudShellCore/SSH/SSHKeyTypes.swift
-Tests/MobileCloudShellCoreTests/OpenSSHPublicKeyTests.swift
-Tests/MobileCloudShellCoreTests/SSHCommandQuoterTests.swift
-Tests/MobileCloudShellCoreTests/SSHConnectionManagerTests.swift
-Tests/MobileCloudShellCoreTests/SSHKeyBootstrapperTests.swift
-Tests/MobileCloudShellCoreTests/SSHKeyManagerTests.swift
-Tests/MobileCloudShellCoreTests/SSHPrivateKeyMaterialTests.swift
+Sources/MobileCloudShellCore/Workspace/WorkspaceRepository.swift
+Tests/MobileCloudShellCoreTests/WorkspaceRepositoryTests.swift
 ```
+
+This slice is intended to satisfy the first pure-core part of Phase 5 before real UI/Cloud Shell smoke testing is available.
 
 ## What the SSH/key-management slice provides
 
@@ -99,22 +87,25 @@ Important rollback fix already applied:
 
 Use this for future management exec commands. Do not inject management commands into the interactive PTY.
 
+## What the workspace repository slice provides
+
+- `WorkspaceManagementExecuting`: an injected management exec abstraction so workspace commands stay separate from interactive PTY traffic.
+- `SSHWorkspaceManagementExecutor`: production bridge from `SSHConnectionManager.execute` to the repository.
+- `WorkspaceRepository.listLiveWorkspaces()`: runs `tmux list-sessions` via management exec, parses app-managed sessions, reads metadata, and merges fallback display names.
+- `WorkspaceRepository.createWorkspace()`: allocates the next `mobile-agent_YYYYMMDD-HHmm_{letter}` name, creates a detached tmux session, and persists display metadata.
+- `WorkspaceRepository.renameWorkspace()`: updates metadata only; it does not send tmux/session-management strings to a terminal PTY.
+- `WorkspaceRepository.killWorkspace()`: kills the app-managed tmux session and removes its metadata.
+- Malformed metadata is backed up to `workspaces.json.invalid.$(date +%Y%m%d%H%M%S)` before replacement during mutating operations.
+- All session-name inputs are validated as app-managed names before command construction, shell arguments use `SSHCommandQuoter`, and command-failure errors report operation labels instead of full metadata-bearing shell commands.
+
 ## Review status
 
-Final static code-quality re-review result for this slice:
+Current workspace repository slice status:
 
-- Critical issues: none.
-- Important issues: none.
-- Minor note: `SSHKeyBootstrapError.rollbackFailed` could optionally implement `LocalizedError` for better user-facing descriptions, but this is not merge-blocking.
-- Verdict: approved, pending test execution in a Swift-capable environment.
-
-Local checks that were run here:
-
-```bash
-git diff --check
-```
-
-Result: passed.
+- Implementation and XCTest coverage have been added.
+- Local WSL environment still has no `swift` or `xcodebuild`, so compile/test validation must run on macOS, CI, or another Swift-capable host.
+- `swift test --filter WorkspaceRepositoryTests` was attempted locally and failed at tool discovery with `swift: command not found`.
+- `git diff --check` passed locally.
 
 Checks not run here because tools were unavailable:
 
@@ -131,11 +122,12 @@ Use a macOS or Swift-capable environment.
 git clone https://github.com/dudupunch0-sketch/google-cloud-shell-ios.git
 cd google-cloud-shell-ios
 git fetch origin
-git checkout feat/ssh-key-management-core
+git checkout hermes/hermes-1ae3a642
+swift test --filter WorkspaceRepositoryTests
 swift test
 ```
 
-If using GitHub CLI:
+If using GitHub CLI after a PR is open:
 
 ```bash
 gh pr view --json number,title,state,url,headRefName,baseRefName,statusCheckRollup
@@ -144,13 +136,13 @@ gh pr view --json number,title,state,url,headRefName,baseRefName,statusCheckRoll
 If tests pass:
 
 1. Confirm CI is green on the PR.
-2. Merge `feat/ssh-key-management-core` into `main` using the repo's preferred merge strategy.
+2. Merge `hermes/hermes-1ae3a642` into `main` using the repo's preferred merge strategy.
 3. Start the next slice from updated `main`.
 
 If tests fail:
 
-1. Fix compile/test errors on `feat/ssh-key-management-core`.
-2. Re-run `swift test`.
+1. Fix compile/test errors on `hermes/hermes-1ae3a642`.
+2. Re-run `swift test --filter WorkspaceRepositoryTests` and `swift test`.
 3. Push the fix to the same branch so the PR updates.
 
 ## Recommended next slice after merge
@@ -165,16 +157,12 @@ Recommended order:
    - Implement `SSHKeyPairStore` using Keychain.
    - Implement `SSHKeyGenerating` with the selected algorithm/library path.
    - Keep private key material redacted in logs and errors.
-3. Workspace repository over management exec channel.
-   - Use `SSHConnectionManager.execute` for `tmux list/new/kill` and metadata read/write.
-   - Quote all shell arguments with `SSHCommandQuoter`.
-   - Keep all management commands out of interactive terminal PTY.
-4. Terminal UI skeleton.
+3. Terminal UI skeleton when a macOS/Xcode environment is available.
    - Session picker.
    - Terminal screen.
    - Keyboard accessory bar.
    - Top-down sessions drawer.
-5. Reconnect/lifecycle coordinator.
+4. Reconnect/lifecycle coordinator.
    - Foreground reconnect.
    - Last workspace reattach if tmux session exists.
    - Picker fallback if the session is gone.
@@ -191,7 +179,8 @@ Recommended order:
 ## Merge readiness checklist
 
 - [ ] PR opened against `main`.
-- [ ] `swift test` passes on macOS or CI.
+- [ ] `swift test --filter WorkspaceRepositoryTests` passes on macOS, CI, or another Swift-capable host.
+- [ ] Full `swift test` passes on macOS, CI, or another Swift-capable host.
 - [ ] No private key/OAuth token material appears in logs or error descriptions.
-- [ ] Reviewer accepts rollback semantics for failed key registration/polling.
-- [ ] Reviewer accepts that this slice is adapter/domain core only, not a real SSH library implementation.
+- [ ] Reviewer accepts management exec command construction and metadata backup behavior.
+- [ ] Reviewer accepts that this slice is repository/domain core only, not a real SSH library or UI implementation.
